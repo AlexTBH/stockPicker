@@ -10,13 +10,13 @@ public class TestController : ControllerBase
     [HttpGet("public")]
     public IActionResult Public()
     {
-        return Ok("Public endpoint works 🚀");
+        return Ok("Public endpoint works");
     }
 
     [Authorize]
     [HttpGet("private")]
     public IActionResult Private()
     {
-        return Ok("You are authorized 🔐");
+        return Ok("You are authorized");
     }
 }
