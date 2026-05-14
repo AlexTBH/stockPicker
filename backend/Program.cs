@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using backend.Interface;
+using backend.Repos;
 
 
 
@@ -45,10 +47,23 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
+//DBs
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IStockRepository, StockRepository>();
+builder.Services.AddScoped<IPortfolioRepository, PortfolioRepository>();
+builder.Services.AddScoped<IUserStockRepository, UserStockRepository>();
+
+
+//Services
 builder.Services.AddScoped<UserService, UserService>();
 builder.Services.AddScoped<AuthService, AuthService>();
+builder.Services.AddScoped<TransactionService, TransactionService>();
+builder.Services.AddScoped<PortfolioService, PortfolioService>();
+
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddHttpClient<IStockPriceService, AlphaVantageService>();
+
+builder.Services.AddMemoryCache();
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new Exception("Jwt:Key is missing");
