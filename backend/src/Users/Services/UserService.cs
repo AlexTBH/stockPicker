@@ -3,13 +3,30 @@ using backend.DTOS;
 using backend.Mapper;
 using backend.Common;
 
+namespace backend.Services;
 public class UserService
 {
 
     private readonly IUserRepository _userRepository;
-    public UserService(IUserRepository userRepository, JwtService jwtService)
+    private readonly PortfolioService _portfolioService;
+
+    public UserService(IUserRepository userRepository, PortfolioService portfolioService)
     {
         _userRepository = userRepository;
+        _portfolioService = portfolioService;
+    }
+    public async Task CreateUserAsync(RegisterUserDto userDto)
+    {
+        var email = EmailHelper.Normalize(userDto.Email);
+        await EnsureEmailIsAvailable(email);
+
+        var user = UserMapper.DtoToUser(userDto);
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(userDto.Password);
+
+        await _userRepository.AddAsync(user);
+        await _portfolioService.CreateDefaultPortfolioAsync(user.Id);
+
     }
 
     public async Task EnsureEmailIsAvailable(string email)

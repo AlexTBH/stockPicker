@@ -6,6 +6,7 @@ public interface IPortfolioRepository
 {
     Task<Portfolio?> GetByUserIdAsync(int userId);
     Task UpdateAsync(Portfolio portfolio);
+    Task AddAsync(Portfolio portfolio);
 }
 
 public class PortfolioRepository : IPortfolioRepository
@@ -26,6 +27,12 @@ public class PortfolioRepository : IPortfolioRepository
     public async Task UpdateAsync(Portfolio portfolio)
     {
         _db.Portfolios.Update(portfolio);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task AddAsync(Portfolio portfolio)
+    {
+        await _db.Portfolios.AddAsync(portfolio);
         await _db.SaveChangesAsync();
     }
 }

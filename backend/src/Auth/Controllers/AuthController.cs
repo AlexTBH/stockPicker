@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using backend.DTOS;
+using backend.Services;
 
 [ApiController]
-[Route("api/users")]
+[Route("api/auth")]
 public class AuthController : ControllerBase
 {
-
     private readonly AuthService _authService;
+
     public AuthController(AuthService authService)
     {
         _authService = authService;
@@ -17,6 +17,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Register(RegisterUserDto dto)
     {
         await _authService.RegisterUserAsync(dto);
+
         return Ok();
     }
 
@@ -24,22 +25,68 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login(LoginUserDto dto)
     {
         var result = await _authService.LoginAsync(dto);
-    
+
         if (result == null)
-            return Unauthorized("Invalid credentials");
-    
-        return Ok(result);
+            return Unauthorized();
+
+        Response.Cookies.Append(
+            "refreshToken",
+            result.RefreshToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false, 
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+        return Ok(new
+        {
+            accessToken = result.AccessToken
+        });
     }
 
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh(RefreshTokenDto dto)
+    public async Task<IActionResult> Refresh()
     {
-        var result = await _authService.RefreshAsync(dto);
-    
+        var refreshToken = Request.Cookies["refreshToken"];
+
+        if (refreshToken == null)
+            return Unauthorized();
+
+        var result =
+            await _authService.RefreshAsync(
+                new RefreshTokenDto
+                {
+                    RefreshToken = refreshToken
+                });
+
         if (result == null)
-            return Unauthorized("Invalid or expired refresh token");
+            return Unauthorized();
+
+        Response.Cookies.Append(
+            "refreshToken",
+            result.RefreshToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+        return Ok(new
+        {
+            accessToken = result.AccessToken
+        });
+    }
+
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete("refreshToken");
     
-        return Ok(result);
+        return Ok();
     }
 
 }

@@ -3,6 +3,8 @@ using backend.DTOS;
 using backend.Repos;
 using backend.Exceptions;
 
+
+namespace backend.Services;
 public class PortfolioService
 {
     private readonly StockService _stockService;
@@ -27,21 +29,20 @@ public class PortfolioService
 
     public async Task<PortfolioDto> GetPortfolioAsync(int userId)
     {
-        var portfolioTask = _portfolioRepository.GetByUserIdAsync(userId);
-        var userStocksTask = _userStockRepository.GetByUserIdAsync(userId);
-    
-        await Task.WhenAll(portfolioTask, userStocksTask);
-    
-        var portfolio = await portfolioTask
+        var portfolio = await _portfolioRepository.GetByUserIdAsync(userId)
             ?? throw new NotFoundException("Portfolio not found");
-        var userStocks = await userStocksTask;
-    
-        var priceTasks = userStocks.Select(us => _stockService.GetPriceAsync(us.Stock.Symbol));
-        var prices = await Task.WhenAll(priceTasks);
-    
+
+        var userStocks = await _userStockRepository.GetByUserIdAsync(userId);
+
+        var prices = new decimal?[userStocks.Count];
+        for (int i = 0; i < userStocks.Count; i++)
+        {
+            prices[i] = await _stockService.GetPriceAsync(userStocks[i].Stock.Symbol);
+        }
+
         var holdings = BuildHoldings(userStocks, prices);
         var totalValue = portfolio.CashBalance + holdings.Sum(h => h.TotalValue);
-    
+
         return new PortfolioDto
         {
             CashBalance = portfolio.CashBalance,
@@ -60,9 +61,21 @@ public class PortfolioService
         portfolio.CashBalance -= total;
         await _portfolioRepository.UpdateAsync(portfolio);
 
-        await AddOrUpdateUserStockAsync(userId, stock.Id, dto.Quantity);
+        await AddOrUpdateUserStockAsync(
+            userId,
+            stock.Id,
+            dto.Quantity,
+            price
+        );
 
-        var transaction = await RecordTransactionAsync(userId, stock.Id, TransactionType.Buy, dto.Quantity, price);
+        var transaction = await RecordTransactionAsync(
+            userId,
+            stock.Id,
+            TransactionType.Buy,
+            dto.Quantity,
+            price
+        );
+
         return TransactionMapper.ToDto(transaction, stock.Symbol);
     }
 
@@ -106,9 +119,10 @@ public class PortfolioService
         return (stock, price, portfolio);
     }
 
-    private async Task AddOrUpdateUserStockAsync(int userId, int stockId, decimal quantity)
+    private async Task AddOrUpdateUserStockAsync(int userId, int stockId, decimal quantity, decimal price)
     {
-        var userStock = await _userStockRepository.GetByUserAndStockAsync(userId, stockId);
+        var userStock = await _userStockRepository
+            .GetByUserAndStockAsync(userId, stockId);
 
         if (userStock == null)
         {
@@ -116,16 +130,25 @@ public class PortfolioService
             {
                 UserId = userId,
                 StockId = stockId,
-                Quantity = quantity
+                Quantity = quantity,
+                AvgBuyPrice = price
             });
-        }
-        else
-        {
-            userStock.Quantity += quantity;
-            await _userStockRepository.UpdateAsync(userStock);
-        }
-    }
 
+            return;
+        }
+
+        var totalQuantity = userStock.Quantity + quantity;
+
+        var newAvg =
+            ((userStock.AvgBuyPrice * userStock.Quantity) +
+             (price * quantity))
+            / totalQuantity;
+
+        userStock.Quantity = totalQuantity;
+        userStock.AvgBuyPrice = newAvg;
+
+        await _userStockRepository.UpdateAsync(userStock);
+    }
     private async Task<Transaction> RecordTransactionAsync(
         int userId, int stockId, TransactionType type, decimal quantity, decimal price)
     {
@@ -146,23 +169,49 @@ public class PortfolioService
     private List<PortfolioStockDto> BuildHoldings(List<UserStock> userStocks, decimal?[] prices)
     {
         var holdings = new List<PortfolioStockDto>();
-    
+
         for (int i = 0; i < userStocks.Count; i++)
         {
             var price = prices[i];
+
             if (price == null)
                 continue;
-    
+
             var userStock = userStocks[i];
+
+            var totalValue = price.Value * userStock.Quantity;
+
+            var profitLoss =
+                (price.Value - userStock.AvgBuyPrice)
+                * userStock.Quantity;
+
             holdings.Add(new PortfolioStockDto
             {
                 Symbol = userStock.Stock.Symbol,
+
                 Quantity = userStock.Quantity,
+
                 CurrentPrice = price.Value,
-                TotalValue = price.Value * userStock.Quantity
+
+                AvgBuyPrice = userStock.AvgBuyPrice,
+
+                TotalValue = totalValue,
+
+                ProfitLoss = profitLoss
             });
         }
-    
+
         return holdings;
     }
+    public async Task CreateDefaultPortfolioAsync(int userId)
+    {
+        var portfolio = new Portfolio
+        {
+            UserId = userId,
+            CashBalance = 10000
+        };
+
+        await _portfolioRepository.AddAsync(portfolio);
+    }
+
 }

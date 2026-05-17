@@ -2,6 +2,7 @@ using backend.Interface;
 using backend.Models;
 using Microsoft.Extensions.Caching.Memory;
 
+namespace backend.Services;
 public class StockService
 {
     private readonly IStockPriceService _priceService;

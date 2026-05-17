@@ -9,7 +9,7 @@ public static class TransactionMapper
         {
             TransactionId = transaction.Id,
             Symbol = symbol,
-            Type = transaction.Type,
+            Type = transaction.Type.ToString(),
             Quantity = transaction.Quantity,
             PriceAtTransaction = transaction.PriceAtTransaction,
             TotalAmount = transaction.PriceAtTransaction * transaction.Quantity,

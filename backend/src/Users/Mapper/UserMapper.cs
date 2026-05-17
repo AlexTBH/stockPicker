@@ -11,7 +11,8 @@ public static class UserMapper
         var user = new User
         {
             Name = dto.Name,
-            Email = EmailHelper.Normalize(dto.Email)
+            Email = EmailHelper.Normalize(dto.Email),
+            Role = Role.User
         };
 
         return user;

@@ -4,6 +4,8 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using backend.Models;
 
+namespace backend.Services;
+
 public class JwtService
 {
     private readonly IConfiguration _config;
@@ -20,7 +22,8 @@ public class JwtService
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Name)
+            new Claim(ClaimTypes.Name, user.Name),
+            new Claim(ClaimTypes.Role, user.Role.ToString())
         };
 
         var token = new JwtSecurityToken(

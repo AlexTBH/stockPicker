@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using backend.Services;
 
 [ApiController]
 [Route("api/stocks")]

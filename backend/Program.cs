@@ -6,6 +6,7 @@ using System.Text;
 using Microsoft.OpenApi.Models;
 using backend.Interface;
 using backend.Repos;
+using backend.Services;
 
 
 
@@ -52,6 +53,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<IPortfolioRepository, PortfolioRepository>();
 builder.Services.AddScoped<IUserStockRepository, UserStockRepository>();
+builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 
 
 //Services
@@ -59,6 +61,7 @@ builder.Services.AddScoped<UserService, UserService>();
 builder.Services.AddScoped<AuthService, AuthService>();
 builder.Services.AddScoped<TransactionService, TransactionService>();
 builder.Services.AddScoped<PortfolioService, PortfolioService>();
+builder.Services.AddScoped<StockService, StockService>();
 
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddHttpClient<IStockPriceService, AlphaVantageService>();
@@ -90,12 +93,32 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:5173",
+                "https://localhost:5173"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
 app.UseRouting();
+
+app.UseCors("AllowFrontend");
+
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapControllers();
 
 
 if (app.Environment.IsDevelopment())
@@ -104,6 +127,5 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapControllers();
 
 app.Run();

@@ -3,6 +3,8 @@ using backend.DTOS;
 using backend.Mapper;
 using backend.Common;
 
+namespace backend.Services;
+
 public class AuthService
 {
 
@@ -18,15 +20,8 @@ public class AuthService
 
     public async Task RegisterUserAsync(RegisterUserDto dto)
     {
-        var email = EmailHelper.Normalize(dto.Email);
+        await _userService.CreateUserAsync(dto);
 
-        await _userService.EnsureEmailIsAvailable(email);
-
-        var user = UserMapper.DtoToUser(dto);
-
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-
-        await _userRepository.AddAsync(user);
     }
     
     public async Task<AuthResultDto?> LoginAsync(LoginUserDto dto)
@@ -56,7 +51,6 @@ public class AuthService
     
         return await GenerateAuthResponseAsync(user);
     }
-
     private async Task<AuthResultDto> GenerateAuthResponseAsync(User user)
     {
         var newAccessToken = _jwtService.GenerateToken(user);

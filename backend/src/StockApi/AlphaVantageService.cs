@@ -1,6 +1,8 @@
 using System.Text.Json;
 using backend.Interface;
 
+namespace backend.Services;
+
 public class AlphaVantageService : IStockPriceService
 {
     private readonly HttpClient _httpClient;
