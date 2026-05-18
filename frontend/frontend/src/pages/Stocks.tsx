@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { useGetStocksQuery, useGetPortfolioQuery, useBuyStockMutation, useSellStockMutation, } from "../store/extendedApi";
+import {
+  useGetStocksQuery,
+  useGetPortfolioQuery,
+  useBuyStockMutation,
+  useSellStockMutation,
+} from "../store/extendedApi";
 
 type Stock = {
   id: number;
@@ -13,7 +18,7 @@ export default function Stocks() {
   const [message, setMessage] = useState("");
 
   const [quantities, setQuantities] = useState<
-    Record<string, number>
+    Record<string, string>
   >({});
 
   const { data: stocks = [], isLoading } =
@@ -36,16 +41,18 @@ export default function Stocks() {
     getHolding(symbol)?.quantity ?? 0;
 
   const getQuantity = (symbol: string) =>
-    quantities[symbol] ?? 1;
+    quantities[symbol] ?? "1";
 
   const setQuantity = (
     symbol: string,
-    value: number
+    value: string
   ) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [symbol]: value,
-    }));
+    if (/^\d*$/.test(value)) {
+      setQuantities((prev) => ({
+        ...prev,
+        [symbol]: value,
+      }));
+    }
   };
 
   const getPnL = (stock: Stock) => {
@@ -95,7 +102,9 @@ export default function Stocks() {
   );
 
   const handleBuy = async (symbol: string) => {
-    const quantity = getQuantity(symbol);
+    const quantity = Number(
+      getQuantity(symbol)
+    );
 
     try {
       await buyStock({
@@ -114,7 +123,9 @@ export default function Stocks() {
   };
 
   const handleSell = async (symbol: string) => {
-    const quantity = getQuantity(symbol);
+    const quantity = Number(
+      getQuantity(symbol)
+    );
 
     try {
       await sellStock({
@@ -262,17 +273,15 @@ export default function Stocks() {
                   </label>
 
                   <input
-                    type="number"
-                    min={1}
+                    type="text"
                     value={quantity}
                     onChange={(e) =>
                       setQuantity(
                         stock.symbol,
-                        Number(
-                          e.target.value
-                        )
+                        e.target.value
                       )
                     }
+                    placeholder="1"
                     style={{
                       width: "100%",
                       marginTop: "5px",

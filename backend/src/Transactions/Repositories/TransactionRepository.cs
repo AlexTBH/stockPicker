@@ -5,18 +5,21 @@ using dbContext;
 public interface ITransactionRepository
 {
     Task AddAsync(Transaction transaction);
-    Task<List<Transaction>> GetByUserIdAsync(int userId);
-    Task<List<Transaction>> GetAllForUserAsync(int userId);
-}
 
+    Task<List<Transaction>> GetByUserIdAsync(int userId, int page, int pageSize);
+
+    Task<int> CountByUserIdAsync(int userId);
+
+    IQueryable<Transaction> Query();
+}
 
 public class TransactionRepository : ITransactionRepository
 {
     private readonly AppDbContext _db;
 
-    public TransactionRepository(AppDbContext dbContext)
+    public TransactionRepository(AppDbContext db)
     {
-        _db = dbContext;
+        _db = db;
     }
 
     public async Task AddAsync(Transaction transaction)
@@ -25,20 +28,29 @@ public class TransactionRepository : ITransactionRepository
         await _db.SaveChangesAsync();
     }
 
-    public async Task<List<Transaction>> GetByUserIdAsync(int userId)
+    public async Task<List<Transaction>> GetByUserIdAsync(
+        int userId,
+        int page,
+        int pageSize)
     {
         return await _db.Transactions
             .Include(t => t.Stock)
             .Where(t => t.UserId == userId)
             .OrderByDescending(t => t.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
     }
-    public async Task<List<Transaction>> GetAllForUserAsync(int userId)
+
+    public async Task<int> CountByUserIdAsync(int userId)
     {
         return await _db.Transactions
-            .Include(t => t.Stock)
-            .Where(t => t.UserId == userId)
-            .OrderBy(t => t.CreatedAt)
-            .ToListAsync();
+            .CountAsync(t => t.UserId == userId);
+    }
+
+    public IQueryable<Transaction> Query()
+    {
+        return _db.Transactions
+            .Include(t => t.Stock);
     }
 }

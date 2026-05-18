@@ -9,6 +9,7 @@ public interface IUserRepository
     Task<User?> GetByEmailAsync(string email);
     Task UpdateAsync(User user);
     Task<User?> GetByRefreshTokenAsync(string refreshToken);
+    Task<List<User>> GetAllAsync();
 }
 
 public class UserRepository : IUserRepository
@@ -42,6 +43,12 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(u =>
                 u.RefreshToken == refreshToken &&
                 u.RefreshTokenExpiryTime > DateTime.UtcNow);
+    }
+    public async Task<List<User>> GetAllAsync()
+    {
+        return await _db.Users
+            .OrderBy(u => u.Id)
+            .ToListAsync();
     }
 
 }

@@ -7,7 +7,7 @@ using System.Security.Claims;
 namespace backend.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/transactions")]
 [Authorize]
 public class TransactionController : ControllerBase
 {
@@ -23,11 +23,15 @@ public class TransactionController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetTransactions()
+    public async Task<IActionResult>GetTransactions(int page = 1, int pageSize = 10)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
 
-        var result = await _transactionService.GetByUserIdAsync(userId);
+        var result = await _transactionService.GetByUserIdAsync(
+                userId,
+                page,
+                pageSize
+            );
 
         return Ok(result);
     }
@@ -35,7 +39,7 @@ public class TransactionController : ControllerBase
     [HttpPost("buy")]
     public async Task<IActionResult> Buy([FromBody] TransactionRequestDto dto)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
 
         var result = await _portfolioService.BuyAsync(userId, dto);
 
@@ -45,15 +49,12 @@ public class TransactionController : ControllerBase
     [HttpPost("sell")]
     public async Task<IActionResult> Sell([FromBody] TransactionRequestDto dto)
     {
-        var userId = GetUserId();
+        var userId = User.GetUserId();
 
         var result = await _portfolioService.SellAsync(userId, dto);
 
         return Ok(result);
     }
 
-    private int GetUserId()
-    {
-        return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-    }
+
 }

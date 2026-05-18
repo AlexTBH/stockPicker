@@ -27,7 +27,11 @@ public class AuthController : ControllerBase
         var result = await _authService.LoginAsync(dto);
 
         if (result == null)
-            return Unauthorized();
+            return Unauthorized(new
+            {
+                message = "Invalid credentials",
+                code = "AUTH_INVALID_CREDENTIALS"
+            });
 
         Response.Cookies.Append(
             "refreshToken",

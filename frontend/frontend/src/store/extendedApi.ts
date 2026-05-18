@@ -22,11 +22,30 @@ export const extendedApi = api.injectEndpoints({
       providesTags: ["Portfolio"],
     }),
 
-    getTransactions: builder.query<Transaction[], void>({
-      query: () => "/transaction",
-      providesTags: ["Transactions"],
+    getTransactions: builder.query<
+    {
+      items: Transaction[];
+      currentPage:number;
+      pageSize:number;
+      totalPages:number;
+      totalCount:number;
+    },
+    {
+      page:number;
+      pageSize:number;
+    }
+    >({
+      query: ({ page, pageSize }) => ({
+        url: `/transactions`,
+        params: {
+          page,
+          pageSize
+        }
+      }),
+    
+      providesTags:["Transactions"]
     }),
-
+  
     buyStock: builder.mutation<
       void,
       { symbol: string; quantity: number }

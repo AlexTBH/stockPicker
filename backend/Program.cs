@@ -7,6 +7,8 @@ using Microsoft.OpenApi.Models;
 using backend.Interface;
 using backend.Repos;
 using backend.Services;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 
 
@@ -86,7 +88,11 @@ builder.Services
 
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(key)
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.NameIdentifier
+
+
         };
     });
 
@@ -113,7 +119,7 @@ var app = builder.Build();
 app.UseRouting();
 
 app.UseCors("AllowFrontend");
-
+app.UseMiddleware<ExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
