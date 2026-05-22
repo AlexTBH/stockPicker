@@ -29,16 +29,20 @@ public class PortfolioService
 
     public async Task<PortfolioDto> GetPortfolioAsync(int userId)
     {
-        var portfolio = await _portfolioRepository.GetByUserIdAsync(userId)
-            ?? throw new NotFoundException("Portfolio not found");
+    var portfolio = await _portfolioRepository.GetByUserIdAsync(userId)
+        ?? throw new NotFoundException("Portfolio not found");
 
-        var userStocks = await _userStockRepository.GetByUserIdAsync(userId);
+    var userStocks = await _userStockRepository.GetByUserIdAsync(userId);
 
-        var prices = new decimal?[userStocks.Count];
-        for (int i = 0; i < userStocks.Count; i++)
-        {
-            prices[i] = await _stockService.GetPriceAsync(userStocks[i].Stock.Symbol);
-        }
+    Console.WriteLine($"[PORTFOLIO] Found {userStocks.Count} stocks for user {userId}");
+
+    var prices = new decimal?[userStocks.Count];
+    for (int i = 0; i < userStocks.Count; i++)
+    {
+        Console.WriteLine($"[PORTFOLIO] Fetching price for {userStocks[i].Stock.Symbol}");
+        prices[i] = await _stockService.GetPriceAsync(userStocks[i].Stock.Symbol);
+        Console.WriteLine($"[PORTFOLIO] Got price {prices[i]} for {userStocks[i].Stock.Symbol}");
+    }
 
         var holdings = BuildHoldings(userStocks, prices);
         var totalValue = portfolio.CashBalance + holdings.Sum(h => h.TotalValue);

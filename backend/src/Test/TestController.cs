@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace backend.Controllers;
 
@@ -7,6 +8,13 @@ namespace backend.Controllers;
 [Route("api/test")]
 public class TestController : ControllerBase
 {
+
+    private readonly IMemoryCache _cache;
+
+    public TestController(IMemoryCache cache)
+    {
+        _cache = cache;
+    }
     [HttpGet("public")]
     public IActionResult Public()
     {
@@ -19,4 +27,6 @@ public class TestController : ControllerBase
     {
         return Ok("You are authorized");
     }
+
 }
+

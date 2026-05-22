@@ -26,6 +26,7 @@ public class StockService
         if (stock == null)
             return null;
 
+
         var shouldRefresh =
             stock.LastUpdated == null ||
             stock.LastUpdated < DateTime.UtcNow.AddHours(-6);
